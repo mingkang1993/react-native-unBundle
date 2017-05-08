@@ -1,0 +1,56 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "react-native-unBundle",
+        "scope": null,
+        "escapedName": "react-native-unBundle",
+        "name": "react-native-unBundle",
+        "rawSpec": "",
+        "spec": "latest",
+        "type": "tag"
+      },
+    ]
+  ],
+  "author": {
+    "name": "damo"
+  },
+  "dependencies": {},
+  "description": "Factor react-native packager bundles into common shared bundles",
+  "devDependencies": {
+    "del": "^2.2.0",
+    "eslint": "^1.10.1",
+    "tap": "^5.0.0"
+  },
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "keywords": [
+    "react-native",
+    "packager"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "maintainers": [
+    {
+      "name": "damo",
+      "email": "623109618@qq.com"
+    }
+  ],
+  "name": "react-native-unBundle",
+  "optionalDependencies": {},
+  "peerDependencies": {
+    "react-native": "^0.42.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mingkang1993/react-native-unBundle.git"
+  },
+  "scripts": {
+    "coveralls": "COVERALLS_REPO_TOKEN=REPO_TOKEN npm test",
+    "lint": "eslint *.js 'lib/**/*.js' test/*.js bin/*.js",
+    "test": "npm run lint && tap --cov test/*.js"
+  },
+  "version": "0.0.1"
+}
