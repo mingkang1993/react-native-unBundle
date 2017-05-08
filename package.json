@@ -1,17 +1,4 @@
 {
-  "_args": [
-    [
-      {
-        "raw": "react-native-unBundle",
-        "scope": null,
-        "escapedName": "react-native-unBundle",
-        "name": "react-native-unBundle",
-        "rawSpec": "",
-        "spec": "latest",
-        "type": "tag"
-      },
-    ]
-  ],
   "author": {
     "name": "damo"
   },
@@ -41,7 +28,7 @@
   "name": "react-native-unBundle",
   "optionalDependencies": {},
   "peerDependencies": {
-    "react-native": "^0.42.1"
+    "react-native": "^0.40.1"
   },
   "repository": {
     "type": "git",
