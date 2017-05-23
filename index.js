@@ -5,15 +5,14 @@ require('react-native/packager/babelRegisterOnly')([
   /local-cli/,
 ])
 
-var debug = require('react-native/local-cli/util/log').out('bundle');
-//var debug = require('util').debuglog('bundle')
-var path = require('path');
-var ReactPackager = require('react-native/packager/react-packager');
-var Bundle = require('react-native/packager/react-packager/src/Bundler/Bundle');
-var saveAssets = require('react-native/local-cli/bundle/saveAssets');
-var outputBundle = require('react-native/local-cli/bundle/output/bundle');
-var CacheBundle = require('./CacheBundle');
-const Server = require('react-native/packager/react-packager/src/Server');
+var debug = require('react-native/local-cli/util/log').out('bundle'),
+    path = require('path'),
+    ReactPackager = require('react-native/packager/react-packager'),
+    Bundle = require('react-native/packager/react-packager/src/Bundler/Bundle'),
+    saveAssets = require('react-native/local-cli/bundle/saveAssets'),
+    outputBundle = require('react-native/local-cli/bundle/output/bundle'),
+    CacheBundle = require('./CacheBundle'),
+    Server = require('react-native/packager/react-packager/src/Server');
 
 
 function createCodeWithMap(bundle, dev) {
