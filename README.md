@@ -1,71 +1,4 @@
-# react-native-factor-bundle
-Factor react-native packager bundles into common shared bundles
-
-## Example
-
-### Sources
-Check the [directories](example/MyApp).
-
-Here is an overview:
-```
-⌘ tree -I 'node_modules' .
-.
-├── build.js
-├── lib
-│   └── sayHi.js
-├── package.json
-└── page
-    ├── bar
-    │   └── index.ios.js
-    └── foo
-        └── index.ios.js
-
-```
-
-You should ignore the `build.js` right now.
-
-Suppose we have two bundles to build: foo.ios.jsbundle, bar.ios.jsbundle.
-
-### Build with the original RN packager
-We can use the packager shipped with RN, and do:
-```bash
-node node_modules/react-native/local-cli/cli.js bundle --entry-file page/foo/index.ios.js --bundle-output rn-packager-build/foo.ios.jsbundle
-node node_modules/react-native/local-cli/cli.js bundle --entry-file page/bar/index.ios.js --bundle-output rn-packager-build/bar.ios.jsbundle
-
-```
-
-Two bundles will be created under `rn-packager-build`.
-```
-⌘ tree -I 'node_modules' .
-.
-├── build.js
-├── lib
-│   └── sayHi.js
-├── package.json
-├── page
-│   ├── bar
-│   │   └── index.ios.js
-│   └── foo
-│       └── index.ios.js
-└── rn-packager-build
-    ├── bar.ios.jsbundle
-    └── foo.ios.jsbundle
-
-```
-
-However, there are so many codes shared by the two bundles that
-we decide to create another common bundle for sharing among them.
-
-**NOTE**: To run the example successfully, you should copy the `react-native` directory to `MyApp/node_modules` rather than making a symlink to it.
-
-**NOTE**: In `react-native` 0.18.1, probably you also have to run the following command. See [#5191](https://github.com/facebook/react-native/issues/5191)
-```bash
-rm node_modules/react-native/node_modules/react-transform-hmr/node_modules/react-proxy/node_modules/react-deep-force-update/.babelrc
-
-```
-
-### Build common shared bundles
-So we instead run:
+# react-native-unBundle
 ```bash
 node build.js
 
@@ -74,138 +7,98 @@ node build.js
 **build.js**
 
 ```js
-var bundle = require('../../')
+var bundle = require('react-native-unBundle'),
+    path = require('path'),
+    program = require('commander'),
+    fs = require('fs');
+
+
+function toBool(val){
+    try {
+        return eval(val);
+    }catch (e){
+
+    }
+}
+
+function removeFileAll(path) {
+    function remove(path,resolve,reject){
+        if(fs.existsSync(path)) {
+            let files = fs.readdirSync(path);
+            files.forEach(function(file, index) {
+                const curPath = path + "/" + file;
+                fs.statSync(curPath).isDirectory() ? removeFileAll(curPath) : fs.unlinkSync(curPath);       // recurse
+            });
+            fs.rmdirSync(path);
+            resolve(path)
+        }else{
+            reject(false);
+        }
+    }
+
+    return new Promise((resolve, reject)=>{
+        remove(path,resolve,reject)
+    });
+};
+
+program
+  .version('0.0.1')
+    .option('-d, --dev <d>', 'debug', toBool,false )
+    .option('-p, --platform <name>', 'Generate environment', 'android')
+  .parse(process.argv);
+
+
+
+
+const isIosBundle = program.platform === 'ios';
 
 Promise.resolve()
 .then(function () {
-  var del = require('del')
-  return del('build')
+  return removeFileAll('build');
 })
 .then(function () {
-  var fs = require('fs')
-  fs.mkdirSync('build')
+  fs.mkdirSync('build');
+  isIosBundle && fs.createWriteStream('build/main.jsbundle');
 })
 .then(function () {
-  var path = require('path')
+  var path = require('path');
   return bundle(
     {
-      dev: true,
+      dev: program.dev,
       transformer: require.resolve('react-native/packager/transformer'),
-      verbose: false,
-      platform: 'ios',
+      platform: program.platform
     },
     {
       projectRoots: [__dirname],
-      blacklistRE: require('react-native/packager/blacklist')('ios'),
+      blacklistRE: require('react-native/packager/blacklist')()
     },
     {
-      entries: ['page/foo/index.ios.js', 'page/bar/index.ios.js'],
-      output: function (entry) {
-        var name = 'common'
+      entries: `./index.${program.platform}.js`,
+      filterEntryFile: function(path){
+          var ret = false;
+
+         if(path.indexOf('src') !=-1 && path.indexOf('node_modules') === -1 && path.indexOf(`index.${program.platform}.js`) === -1 && path.indexOf('app.js') === -1){
+             ret = true;
+         }
+         return ret;
+      },
+      assetsDest: path.join(__dirname, '/build'),
+      bundleOutput: function (entry) {
+        const packageName = `/libs.${program.platform}.jsbundle`,
+              pathJsBundle = isIosBundle ? `/ios${packageName}` : `/android/app/src/main/assets${packageName}`;
+
+        return path.join(__dirname, pathJsBundle)
+      },
+      moduleBundleOutput: function (entry) {
+        var name = 'common';
         if (entry) {
           name = path.basename(path.dirname(entry))
         }
-        return path.join('build', name + '.ios.jsbundle')
-      },
+        return path.join(__dirname, `/build/${name}.${program.platform}.jsbundle`)
+      }
     }
   )
 })
 .catch(function (err) {
   console.log(err.stack)
 })
-
-
-```
-
-Now we get three bundles in `build`.
-```
-⌘ tree -I 'node_modules' .
-.
-├── build
-│   ├── bar.ios.jsbundle
-│   ├── common.ios.jsbundle
-│   └── foo.ios.jsbundle
-├── build.js
-├── lib
-│   └── sayHi.js
-├── package.json
-├── page
-│   ├── bar
-│   │   └── index.ios.js
-│   └── foo
-│       └── index.ios.js
-└── rn-packager-build
-    ├── bar.ios.jsbundle
-    └── foo.ios.jsbundle
-
-```
-
-All codes from RN and `lib` are packed into `common.ios.jsbundle`,
-while others are left into page-specific bundles.
-
-We can check the diff:
-```
-⌘ diff build/common.ios.jsbundle rn-packager-build/foo.ios.jsbundle
-1245a1246,1265
-> __d('awesome/page/foo/index.ios.js',function(global, require, module, exports) {  var React=require('react-native/Libraries/react-native/react-native.js');var
->
-> TabBarIOS=React.TabBarIOS;var NavigatorIOS=React.NavigatorIOS;
->
-> require('awesome/lib/sayHi.js');
->
-> var Foo=React.createClass({displayName:'Foo',
-> render:function(){
-> return (
-> React.createElement(TabBarIOS,null,
-> React.createElement(TabBarIOS.Item,{title:'React Native',selected:true},
-> React.createElement(NavigatorIOS,{initialRoute:{title:'React Native'}}))));}});
->
->
->
->
->
->
-> React.AppRegistry.registerComponent('foo',function(){return Foo;});
-> });
-58665c58685,58686
-< __SSTOKENSTRING = "@generated SignedSource<<922f0da78fe19b36d9729f2c85b14e92>>";
----
-> ;require("awesome/page/foo/index.ios.js");
-> __SSTOKENSTRING = "@generated SignedSource<<0c2eb72ce14334d6a657b129439401e3>>";
-
-
-```
-
-**build/foo.ios.jsbundle**:
-```js
-__d('awesome/page/foo/index.ios.js',function(global, require, module, exports) {  var React=require('react-native/Libraries/react-native/react-native.js');var 
-
-TabBarIOS=React.TabBarIOS;var NavigatorIOS=React.NavigatorIOS;
-
-require('awesome/lib/sayHi.js');
-
-var Foo=React.createClass({displayName:'Foo',
-render:function(){
-return (
-React.createElement(TabBarIOS,null,
-React.createElement(TabBarIOS.Item,{title:'React Native',selected:true},
-React.createElement(NavigatorIOS,{initialRoute:{title:'React Native'}}))));}});
-
-
-
-
-
-
-React.AppRegistry.registerComponent('foo',function(){return Foo;});
-});
-;require("awesome/page/foo/index.ios.js");
-__SSTOKENSTRING = "@generated SignedSource<<8958bda140758263bb5ab4dde164c41e>>";
-
-```
-
-## TODO
-
-* Tests.
-* Handle assets.
-* Command line tool.
-
