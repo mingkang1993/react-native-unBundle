@@ -1,25 +1,24 @@
 'use strict'
 
 require('react-native/packager/babelRegisterOnly')([
-  /private-cli\/src/,
-  /local-cli/,
+    /private-cli\/src/,
+    /local-cli/,
 ])
-
-var debug = require('react-native/local-cli/util/log').out('bundle'),
-    path = require('path'),
-    ReactPackager = require('react-native/packager/react-packager'),
-    Bundle = require('react-native/packager/react-packager/src/Bundler/Bundle'),
-    saveAssets = require('react-native/local-cli/bundle/saveAssets'),
-    outputBundle = require('react-native/local-cli/bundle/output/bundle'),
-    CacheBundle = require('./CacheBundle'),
-    Server = require('react-native/packager/react-packager/src/Server');
-
+require('react-native/setupBabel')();
+var Bundle = require('react-native/packager/src/Bundler/Bundle.js');
+var debug = require('react-native/local-cli/util/log').out('bundle');
+var path = require('path');
+var ReactPackager = require('react-native/packager/react-packager');
+var saveAssets = require('react-native/local-cli/bundle/saveAssets');
+var CacheBundle = require('./cacheBundle.js');
+var Server = require('react-native/packager/src/Server');
+var outputBundle = require('react-native/local-cli/bundle/output/bundle');
 
 function createCodeWithMap(bundle, dev) {
-  return {
-    code: bundle.getSource({dev}),
-    map: JSON.stringify(bundle.getSourceMap({dev})),
-  };
+    return {
+        code: bundle.getSource({dev}),
+        map: JSON.stringify(bundle.getSourceMap({dev})),
+    };
 }
 
 
@@ -100,6 +99,22 @@ function createCodeWithMap(bundle, dev) {
 //           outputBundle.save(bundles, bopts, debug);
 
 
+const bundleOptions = {
+    entryModuleOnly: false,
+    generateSourceMaps: false,
+    hot: false,
+    inlineSourceMap: false,
+    isolateModuleIDs: false,
+    onProgress: null,
+    resolutionResponse: null,
+    runBeforeMainModule: [ 'InitializeCore' ],
+    runModule: true,
+    sourceMapUrl: null,
+    unbundle: false,
+    isolateModuleIDs: true
+};
+
+
 
 module.exports = function (args, config, bundleOptions) {
     var cwd = args.cwd || process.cwd();
@@ -110,19 +125,19 @@ module.exports = function (args, config, bundleOptions) {
         blacklistRE: config.blacklistRE,
         transformModulePath: args.transformer,
         reporter:{
-           update:function(a){
-               console.log(a)
-           }
+            update:function(a){
+                console.log(a)
+            }
         }
     });
 
-    const getClient = packagerInstance.buildBundle({
-        entryFile: path.resolve(cwd,bundleOptions.entries),
+    const getClient = packagerInstance.buildBundle(Object.assign(bundleOptions,{
+        entryFile: bundleOptions.entries,
         dev: args.dev,
         minify: !args.dev,
         platform: args.platform
-    }).then(function (bundles) {
-       debug('start Bundles');
+    })).then(function (bundles) {
+        debug('start Bundles');
         const getModules = bundles.getModules();
         const mapFilterPath = {},
             mapLibsFilterPath = {};
@@ -146,7 +161,7 @@ module.exports = function (args, config, bundleOptions) {
         });
 
         const newBundle = CacheBundle.getBuild('newBundle'),
-              libsBundle = CacheBundle.getBuild('libsBundle');
+            libsBundle = CacheBundle.getBuild('libsBundle');
 
         libsBundle.finalize();
         newBundle.finalize();
@@ -159,30 +174,39 @@ module.exports = function (args, config, bundleOptions) {
             }
         }
     }).then(function (bundles) {
-         debug('Final Bundles', bundles.length);
-         const bopts = Object.create(args),
-               { outBundles } = bundles;
+        debug('Final Bundles');
+        const outputBundles = [];
 
-         for(let key in outBundles){
-             (function(bundle){
+        const bopts = Object.create(args),
+            { outBundles } = bundles;
 
-                bopts['bundleOutput'] = bundleOptions[key + 'Output'](bundle._entry);
+        for(let key in outBundles){
+            const bundle = outBundles[key];
 
-                outputBundle.save(bundle, bopts, debug);
-             })(outBundles[key]);
-         }
+//             (function(bundle){
+            outputBundles.push(outputBundle.save(bundle, Object.assign(bopts,{
+                bundleOutput: bundleOptions[key + 'Output'](bundle._entry)
+            }), debug));
+//             })(outBundles[key]);
+        }
 
-     return bundles.bundles
-   })
-   .then(function (bundles) {
-     debug('saveAssets')
-     saveAssets(bundles.getAssets(),args.platform,bundleOptions.assetsDest).then(()=>{
-         debug('Closing client')
-         process.exit();
-     })
-   })
+        return {
+            bundles: bundles.bundles,
+            allOutputBundles: Promise.all(outputBundles)
+        }
+    })
+        .then(function (mainBundles) {
+
+            debug('saveAssets')
+            mainBundles.allOutputBundles.then(()=>{
+                saveAssets(mainBundles.bundles.getAssets(),args.platform,bundleOptions.assetsDest).then(()=>{
+                debug('Closing client')
+            process.exit();
+        })
+        })
+        })
+
 }
-
 
 
 
