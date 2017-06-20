@@ -1,4 +1,4 @@
-var Bundle = require('react-native/packager/react-packager/src/Bundler/Bundle');
+var Bundle = require('react-native/packager/src/Bundler/Bundle');
 
 
 //以后为拆每个模块包做准备
