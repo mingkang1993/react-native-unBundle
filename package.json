@@ -40,6 +40,5 @@
     "coveralls": "COVERALLS_REPO_TOKEN=REPO_TOKEN npm test",
     "lint": "eslint *.js 'lib/**/*.js' test/*.js bin/*.js",
     "test": "npm run lint && tap --cov test/*.js"
-  },
-  "version": "0.0.1"
+  }
 }
