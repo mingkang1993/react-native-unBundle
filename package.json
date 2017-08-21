@@ -1,4 +1,6 @@
 {
+  "name": "@ytapp/react-native-unBundle",
+  "version": "1.0.1",
   "author": {
     "name": "damo"
   },
