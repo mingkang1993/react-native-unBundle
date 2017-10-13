@@ -1,5 +1,5 @@
-var Bundle = require('react-native/packager/src/Bundler/Bundle');
-
+var Bundle = require('metro-bundler/src/Bundler/Bundle');
+const ConfigT = require('react-native/local-cli/util/Config');
 
 //以后为拆每个模块包做准备
 class CacheBuild {
@@ -12,14 +12,15 @@ class CacheBuild {
     }
 
     set addBuild (key){
-        this._builds[key] = new Bundle();
+        this._builds[key] = new Bundle(ConfigT.DEFAULTS);
 
         return this._builds;
     }
 
     setBuild (key,data){
         const item = this._builds[key];
-        this._builds[key]._modules.push(data);
+        // this._builds[key].__modules.push(data);
+        item.__proto__.__proto__.addModule.call(item,data);
 
         return this._builds[key];
     }
