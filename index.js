@@ -47,8 +47,8 @@ module.exports = function (args, config, bundleOptions) {
     const packagerInstance = new Server(Object.assign({},ConfigT.DEFAULTS,{
         transformCache: TransformCaching.useTempDir(),
         projectRoots: config.projectRoots,
-        blacklistRE: config.blacklistRE,
-        transformModulePath: args.transformer,
+        blacklistRE: require('metro-bundler/src/blacklist')(),
+        transformModulePath: require.resolve('metro-bundler/src/transformer'),
         reporter: new TerminalReporter(terminal)
     }));
 
