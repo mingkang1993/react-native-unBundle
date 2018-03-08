@@ -1,8 +1,34 @@
 {
+  "_from": "git+https://github.com/mingkang1993/react-native-unBundle.git#0.49.3",
+  "_id": "react-native-unBundle@0.0.1",
+  "_inBundle": false,
+  "_integrity": "sha1-GuREITYkvGg5Las4Ut5zrPeZPxg=",
+  "_location": "/react-native-unBundle",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "git",
+    "raw": "git+https://github.com/mingkang1993/react-native-unBundle.git#0.49.3",
+    "rawSpec": "git+https://github.com/mingkang1993/react-native-unBundle.git#0.49.3",
+    "saveSpec": "git+https://github.com/mingkang1993/react-native-unBundle.git#0.49.3",
+    "fetchSpec": "https://github.com/mingkang1993/react-native-unBundle.git",
+    "gitCommittish": "0.49.3"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "git+https://github.com/mingkang1993/react-native-unBundle.git#2ca044231cad257f03c1a95a06e1e1916c5af984",
+  "_spec": "git+https://github.com/mingkang1993/react-native-unBundle.git#0.49.3",
+  "_where": "/Users/kangdaye/hipacWork/RNUnpackage/rn",
   "author": {
     "name": "damo"
   },
+  "bugs": {
+    "url": "https://github.com/mingkang1993/react-native-unBundle/issues"
+  },
+  "bundleDependencies": false,
   "dependencies": {},
+  "deprecated": false,
   "description": "Factor react-native packager bundles into common shared bundles",
   "devDependencies": {
     "del": "^2.2.0",
@@ -13,6 +39,7 @@
     "example": "example",
     "test": "test"
   },
+  "homepage": "https://github.com/mingkang1993/react-native-unBundle#readme",
   "keywords": [
     "react-native",
     "packager"

@@ -1,8 +1,10 @@
 # react-native-unBundle
 ```bash
+# react native 拆包 0.49.3 拆分2个  一个libs基础包，一个modules包 
 node build.js
 
 ```
+
 
 **build.js**
 
@@ -65,12 +67,10 @@ Promise.resolve()
   return bundle(
     {
       dev: program.dev,
-      transformer: require.resolve('react-native/packager/transformer'),
       platform: program.platform
     },
     {
-      projectRoots: [__dirname],
-      blacklistRE: require('react-native/packager/blacklist')()
+      projectRoots: [__dirname]
     },
     {
       entries: `./index.${program.platform}.js`,
