@@ -17,6 +17,7 @@ class Build {
             core: defaultBuildConcif()
         };
         this._buildOuter = buildOuter;
+        this._keys = {};
     }
 
     concat(key, module) {
@@ -49,6 +50,16 @@ class Build {
         return buildData
     }
 
+    filterBuild(module, outerFilter) {
+        for (let params of outerFilter){
+            for (let item of params.path) {
+                if (module.path.indexOf(item) > -1) {
+                    return params.fileName;
+                }
+            }
+        }
+    }
+
     /**
      * @buildOpt {
      *    code: string,
@@ -62,22 +73,25 @@ class Build {
      * **/
     buildItem(buildOpt) {
         buildOpt.forEach(module => {
-            if (module.sourcePath.indexOf('node_modules') > -1) {
+            if (this._keys[module.path]){
+                return ;
+            }
+            this._keys[module.path] = true;
+            if (module.path.indexOf('node_modules') > -1) {
                 this.concat('core', module);
                 return;
             }
 
             const { outerFilter } = this._buildOuter;
-            let outerFindPath = null;
+            let outerFindPath = this.filterBuild(module, outerFilter);
 
-            outerFilter.forEach((params)=>{
-                params.path.forEach(item => {
-                    if (module.sourcePath.indexOf(item) > -1) {
-                        outerFindPath = params.fileName;
-                    }
-                }); 
-            });
-
+            // outerFilter.forEach((params)=>{
+            //     params.path.forEach(item => {
+            //         if (module.sourcePath.indexOf(item) > -1) {
+            //             outerFindPath = params.fileName;
+            //         }
+            //     }); 
+            // });
 
             if (!outerFindPath){
                 this.concat('core', module);
@@ -87,7 +101,6 @@ class Build {
             if (!this._builds[outerFindPath]) {
                 this._builds[outerFindPath] = defaultBuildConcif();
             }
-            
             this.concat(outerFindPath, module);
         });
     }
@@ -96,9 +109,10 @@ class Build {
      * @startupModules [buildOpt]
      * @lazyModules [buildOpt]
      * **/
-    build(startupModules, lazyModules) {
-        this.buildItem(lazyModules);
-        this.buildItem(startupModules);
+    build(buildInfo) {
+        this.buildItem(buildInfo);
+        // this.buildItem(startupModules);
+        // this.buildItem(lazyModules);
 
         return this._builds;
     }

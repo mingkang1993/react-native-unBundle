@@ -1,10 +1,14 @@
 'use strict'
 require('metro/src/babelRegisterOnly')([
     /private-cli\/src/,
-    /local-cli/,
-    /Libraries/
-])
+    // /local-cli/,
+    // /Libraries/,
+    '/metro(-bundler)?/',
+]);
+require('graceful-fs').gracefulify(require('fs'));
+require('react-native/local-cli/server/checkNodeVersion')();
 require('react-native/setupBabel')();
+// const cliEntry = require('react-native/local-cli/cli');
 const debug = require('react-native/local-cli/util/log').out('bundle');
 const saveAssets = require('react-native/local-cli/bundle/saveAssets');
 const Server = require('metro/src/Server');
@@ -12,50 +16,69 @@ const outputBundle = require('metro/src/shared/output/bundle');
 const Serializers = require('metro/src/DeltaBundler/Serializers');
 const { defaultGetBuildOption, defaultGetRamBundleInfo } = require('./config');
 const unBuild = require('./Build');
+const fs = require('fs');
+const relativizeSourceMap = require('metro/src/lib/relativizeSourceMap');
+
+function createCodeWithMap(bundle, dev, sourceMapSourcesRoot) {
+    const map = bundle.map;
+    const sourceMap = relativizeSourceMap(
+            JSON.parse(map),
+            sourceMapSourcesRoot
+    );
+    
+    return {
+        code: bundle.code,
+        map: sourceMap,
+    };
+}
 
 
-function getBuildInfo(args, config, bundleOptions) {
+
+async function getBuildInfo(args, config, bundleOptions) {
     debug('start');
 
+    const serviceOpt = defaultGetRamBundleInfo({
+        entryFile: bundleOptions.entries,
+        dev: args.dev,
+        minify: !args.dev,
+        platform: args.platform,
+    });
     const packagerInstance = new Server(
         defaultGetBuildOption(args, config)
     );
 
-    const buildInfo = Serializers.getRamBundleInfo(
+    const buildInfo = await Serializers.getAllModules(
         packagerInstance.getDeltaBundler(),
-        Object.assign(defaultGetRamBundleInfo(), {
-            entryFile: bundleOptions.entries,
-            dev: args.dev,
-            minify: !args.dev,
-            platform: args.platform,
-        })
+        serviceOpt
     );
-    
+
     return {
         packagerInstance,
-        buildInfo
+        buildInfo,
+        serviceOpt
     };
 }
 
 function getUnBuildInfo(buildInfo, bundleOptions) {
     debug('start Bundles');
     const unBuildFn = unBuild(bundleOptions);
-    
-    unBuildFn.build(buildInfo.startupModules, buildInfo.lazyModules);
+    unBuildFn.build(buildInfo);
+    // unBuildFn.build(buildInfo.startupModules, buildInfo.lazyModules);
 
     return unBuildFn.buildAll;
 }
 
-function save(unBuildInfo, args){
+function save(unBuildInfo, args, bundleOptions){
     debug('Final Bundles');
     const bopts = Object.create(args);
     const outputBundles = [];
+    const { path, typeFileName } = bundleOptions;
 
     for (let key in unBuildInfo) {
         (function (itemBuild, key) {
             outputBundles.push(
                 outputBundle.save(itemBuild, Object.assign(bopts, {
-                    bundleOutput: 'build/' + key + '.jsbundle'
+                    bundleOutput: path + key + typeFileName
                 }), debug)
             );
         })(unBuildInfo[key], key);
@@ -64,23 +87,39 @@ function save(unBuildInfo, args){
     return Promise.all(outputBundles);
 }
 
-function buildSaveAssets(saveBuild, packagerInstance, args, bundleOptions){
+async function buildSaveAssets(saveBuild, packagerInstance, serviceOpt, args, bundleOptions){
     debug('saveAssets')
+    console.log(defaultGetBuildOption)
 
-    saveBuild.then(() => {
-        saveAssets(packagerInstance.getAssets(), args.platform, bundleOptions.assetsDest).then(() => {
-            debug('Closing client')
-            process.exit();
-        })
-    })
+    // // Save the assets of the bundle
+    const outputAssets = await packagerInstance.getAssets({
+        ...serviceOpt,
+        bundleType: 'todo',
+    });
+    // // When we're done saving bundle output and the assets, we're done.
+    const assets = await saveAssets(
+        outputAssets,
+        args.platform,
+        bundleOptions.assetsDest,
+    );
+    packagerInstance.end();
+
+    debug('Closing client');
+    process.exit();
+
+    return assets;
 }
 
 async function build(args, config, bundleOptions){
-    const { buildInfo, packagerInstance } = getBuildInfo(args, config, bundleOptions);
-    const unBuildInfo = getUnBuildInfo(await buildInfo, bundleOptions);
-    const saveBuild = save(unBuildInfo, args);
+    // const { buildInfo, packagerInstance } = await getBuildInfo(args, config, bundleOptions);
+    // const unBuildInfo = getUnBuildInfo(await buildInfo, bundleOptions);
+    // const saveBuild = save(unBuildInfo, args, bundleOptions);
 
-    buildSaveAssets(saveBuild, packagerInstance, args, bundleOptions)
+    const { buildInfo, packagerInstance, serviceOpt } = await getBuildInfo(args, config, bundleOptions);
+    const unBuildInfo = getUnBuildInfo(buildInfo, bundleOptions);
+    const saveBuild = save(unBuildInfo, args, bundleOptions);
+
+    buildSaveAssets(saveBuild, packagerInstance, serviceOpt, args, bundleOptions)
 }
 
 module.exports = build;
