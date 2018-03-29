@@ -42,6 +42,7 @@ async function getBuildInfo(args, config, bundleOptions) {
         dev: args.dev,
         minify: !args.dev,
         platform: args.platform,
+        runBeforeMainModule: bundleOptions.runBeforeMainModule || []
     });
     const packagerInstance = new Server(
         defaultGetBuildOption(args, config)
