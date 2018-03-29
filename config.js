@@ -72,7 +72,7 @@ function defaultGetRamBundleInfo(opt) {
         isolateModuleIDs: true,
         onProgress: null,
         resolutionResponse: null,
-        runBeforeMainModule: Config.getModulesRunBeforeMainModule(opt.entryFile),
+        runBeforeMainModule: Config.getModulesRunBeforeMainModule(opt.entryFile).concat(opt.runBeforeMainModule),
         runModule: true,
         unbundle: false,
         dev: false,
